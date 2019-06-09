@@ -284,9 +284,9 @@ public class DashBoard extends JFrame {
 		if(bd.getConnection()) {
 					
 			try {
-				model = TableModel.getModel(bd, "SELECT * FROM produto");
+				model = TableModel.getModel(bd, "SELECT COD_PRODUTO , NOME, TIPO,  cast(VALOR_UNITARIO as numeric(36,2)) AS 'VALOR' FROM produto");
 				tableProd.setModel(model);
-				System.out.println(model);
+				//System.out.println(model);
 				//JScrollPane sp1 = new JScrollPane(tableProd);
 				//cadas_prod_panel.add(sp1);
 				
@@ -542,7 +542,7 @@ public class DashBoard extends JFrame {
 		relatorio.add(btnClienteMaisCompra);
 		
 		JComboBox comboBoxValorCompra = new JComboBox();
-		comboBoxValorCompra.setModel(new DefaultComboBoxModel(new String[] {"Valor do pedido", ">=50", ">=100", "+250"}));
+		comboBoxValorCompra.setModel(new DefaultComboBoxModel(new String[] {"Valor do pedido", "<50", ">=50", ">=100", "+250"}));
 		comboBoxValorCompra.setBounds(378, 85, 125, 28);
 		relatorio.add(comboBoxValorCompra);
 		
@@ -860,7 +860,7 @@ public class DashBoard extends JFrame {
 		tablePrincipal.repaint();
 		
 		if(bd.getConnection()) {
-			String sql = "SELECT COD_PEDIDO AS 'Código', VALOR_PEDIDO AS 'Valor', CONVERT(varchar(10), data_pedido, 103) AS 'Data', COD_CLIENTE, COD_PRODUTO, STATUSPEDIDO AS 'Status' from pedido";
+			String sql = "SELECT COD_PEDIDO AS 'Código', cast(VALOR_PEDIDO as numeric(36,2)) AS 'VALOR', CONVERT(varchar(10), data_pedido, 103) AS 'Data', COD_CLIENTE, COD_PRODUTO, STATUSPEDIDO AS 'Status' from pedido";
 			
 			try {
 				model = TableModel.getModel(bd, sql);
@@ -882,7 +882,7 @@ public class DashBoard extends JFrame {
 					JOptionPane.showMessageDialog(null, "Insira uma data antes");
 				}else {
 					if(bd.getConnection()) {
-						String sql = "SELECT COD_PEDIDO AS 'Código', VALOR_PEDIDO AS 'Valor', CONVERT(varchar(10), data_pedido, 103) AS 'Data', COD_CLIENTE, COD_PRODUTO, STATUSPEDIDO AS 'Status' from pedido WHERE DATA_PEDIDO = '" + textPesquisaData.getText() + "'";
+						String sql = "SELECT COD_PEDIDO AS 'Código', cast(VALOR_PEDIDO as numeric(36,2)) AS 'VALOR', CONVERT(varchar(10), data_pedido, 103) AS 'Data', COD_CLIENTE, COD_PRODUTO, STATUSPEDIDO AS 'Status' from pedido WHERE DATA_PEDIDO = '" + textPesquisaData.getText() + "'";
 						
 						try {
 							model = TableModel.getModel(bd, sql);
@@ -902,8 +902,7 @@ public class DashBoard extends JFrame {
 			@Override
 			public void mouseClicked(MouseEvent e) {
 				if(bd.getConnection()) {
-					String sql = "\r\n" + 
-							"SELECT PED.COD_PEDIDO AS 'Código', PED.VALOR_PEDIDO AS 'Valor', CONVERT(varchar(10), PED.data_pedido, 103) AS 'Data', C.NOME_CLIENTE AS 'Cliente', PROD.NOME AS 'Produto',  case when ped.statusPedido = 1 then 'Pago' when ped.statusPedido = 0 then 'Em Aberto' else 'ERRO' end AS 'Status' from PEDIDO PED, CLIENTE C, PRODUTO PROD WHERE PED.COD_CLIENTE = C.COD_CLIENTE AND PED.COD_PRODUTO = PROD.COD_PRODUTO";
+					String sql = "SELECT PED.COD_PEDIDO AS 'Código', cast(PED.VALOR_PEDIDO as numeric(36,2)) AS 'VALOR', CONVERT(varchar(10), PED.data_pedido, 103) AS 'Data', C.NOME_CLIENTE AS 'Cliente', PROD.NOME AS 'Produto',  case when ped.statusPedido = 1 then 'Pago' when ped.statusPedido = 0 then 'Em Aberto' else 'ERRO' end AS 'Status' from PEDIDO PED, CLIENTE C, PRODUTO PROD WHERE PED.COD_CLIENTE = C.COD_CLIENTE AND PED.COD_PRODUTO = PROD.COD_PRODUTO";
 					
 					try {
 						model = TableModel.getModel(bd, sql);
@@ -924,11 +923,12 @@ public class DashBoard extends JFrame {
 			public void mouseClicked(MouseEvent e) {
 				btnMaisDetalhes.setVisible(true);
 				if(bd.getConnection()) {
-					String sql = "SELECT COD_PEDIDO AS 'Código', VALOR_PEDIDO AS 'Valor', CONVERT(varchar(10), data_pedido, 103) AS 'Data', COD_CLIENTE, COD_PRODUTO, STATUSPEDIDO AS 'Status' from pedido";
+					String sql = "SELECT COD_PEDIDO AS 'Código', cast(VALOR_PEDIDO as numeric(36,2)) AS 'VALOR', CONVERT(varchar(10), data_pedido, 103) AS 'Data', COD_CLIENTE, COD_PRODUTO, STATUSPEDIDO AS 'Status' from pedido";
 					
 					try {
 						model = TableModel.getModel(bd, sql);
 						tablePrincipal.setModel(model);
+						textPesquisaData.setText("");
 						
 					}catch(IllegalArgumentException erro) {					
 						JOptionPane.showMessageDialog(null, erro.toString());
@@ -969,7 +969,14 @@ public class DashBoard extends JFrame {
 				}
 				
 				switch(valorCombo) {
-					case ">=50":
+				case "<50":
+					try {
+						buscarPorValor(0, 49.99);
+					}catch(NullPointerException erro) {
+						JOptionPane.showMessageDialog(null, "Nenhum pedido");
+					}
+					break;	
+				case ">=50":
 						try {
 							buscarPorValor(50, 100);
 						}catch(NullPointerException erro) {
@@ -1073,7 +1080,7 @@ public class DashBoard extends JFrame {
 	public void buscarPorValor(double valorMinimo, double valorMaximo) {
 		DB bd = new DB();
 		if(bd.getConnection()) {
-			String sql = "SELECT COD_PEDIDO AS 'Código', VALOR_PEDIDO AS 'Valor', CONVERT(varchar(10), data_pedido, 103) AS 'Data', COD_CLIENTE, COD_PRODUTO, STATUSPEDIDO AS 'Status' from pedido WHERE VALOR_PEDIDO >= '" + valorMinimo + "' AND VALOR_PEDIDO < '" + valorMaximo + "'";
+			String sql = "SELECT COD_PEDIDO AS 'Código', cast(VALOR_PEDIDO as numeric(36,2)) AS 'VALOR', CONVERT(varchar(10), data_pedido, 103) AS 'Data', COD_CLIENTE, COD_PRODUTO, STATUSPEDIDO AS 'Status' from pedido WHERE VALOR_PEDIDO >= '" + valorMinimo + "' AND VALOR_PEDIDO < '" + valorMaximo + "'";
 			
 			try {
 				model = TableModel.getModel(bd, sql);
@@ -1082,7 +1089,7 @@ public class DashBoard extends JFrame {
 			}catch(IllegalArgumentException erro) {					
 				JOptionPane.showMessageDialog(null, "Nenhum pedido encontrado");
 				
-				model = TableModel.getModel(bd, "SELECT COD_PEDIDO AS 'Código', VALOR_PEDIDO AS 'Valor', CONVERT(varchar(10), data_pedido, 103) AS 'Data', COD_CLIENTE, COD_PRODUTO, STATUSPEDIDO AS 'Status' from pedido");
+				model = TableModel.getModel(bd, "SELECT COD_PEDIDO AS 'Código', cast(PED.VALOR_PEDIDO as numeric(36,2)) AS 'VALOR', CONVERT(varchar(10), data_pedido, 103) AS 'Data', COD_CLIENTE, COD_PRODUTO, STATUSPEDIDO AS 'Status' from pedido");
 				tablePrincipal.setModel(model);
 				
 			}finally {
@@ -1094,7 +1101,7 @@ public class DashBoard extends JFrame {
 	public void buscaPorStatus(int status) {
 		DB bd = new DB();
 		if(bd.getConnection()) {
-			String sql = "SELECT COD_PEDIDO AS 'Código', VALOR_PEDIDO AS 'Valor', CONVERT(varchar(10), data_pedido, 103) AS 'Data', COD_CLIENTE, COD_PRODUTO, STATUSPEDIDO AS 'Status' from pedido WHERE statusPedido = '" + status + "'";
+			String sql = "SELECT COD_PEDIDO AS 'Código', cast(VALOR_PEDIDO as numeric(36,2)) AS 'VALOR', CONVERT(varchar(10), data_pedido, 103) AS 'Data', COD_CLIENTE, COD_PRODUTO, STATUSPEDIDO AS 'Status' from pedido WHERE statusPedido = '" + status + "'";
 			
 			try {
 				model = TableModel.getModel(bd, sql);

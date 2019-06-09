@@ -58,6 +58,7 @@ public class FazerPedido extends JFrame {
 	private JTable tableProduto;
 	private JTable tableProdutoFinal;
 	private JTextField fieldData;
+	private double SOMA_FINAL = 0;
 
 	/**
 	 * Launch the application.
@@ -139,16 +140,21 @@ public class FazerPedido extends JFrame {
 			@Override
 			public void keyTyped(KeyEvent arg0) {
 				if(bd.getConnection()) {
-					String sql = "SELECT cod_cliente, nome_cliente FROM cliente WHERE nome_cliente LIKE '%"+clienteBusca.getText()+"%' ";
-					
 					try {
-						model = TableModel.getModel(bd, sql);
-						table.setModel(model);
+						String sql = "SELECT cod_cliente, nome_cliente FROM cliente WHERE nome_cliente LIKE '%"+clienteBusca.getText()+"%' ";
 						
-					}catch(IllegalArgumentException erro) {					
-						JOptionPane.showMessageDialog(null, erro.toString());
-					}finally {
-						bd.close();
+						try {
+							model = TableModel.getModel(bd, sql);
+							table.setModel(model);
+							
+						}catch(IllegalArgumentException erro) {					
+							JOptionPane.showMessageDialog(null, "Nenhum cliente encontrado");
+							clienteBusca.setText("");
+						}finally {
+							bd.close();
+						}
+					}catch(NullPointerException err) {
+						JOptionPane.showMessageDialog(null, "Nenhum cliente encontrado");
 					}
 				}
 			}
@@ -216,7 +222,7 @@ public class FazerPedido extends JFrame {
          contentPane.add(scrollProdutos);
          
          if(bd.getConnection()) {
- 			String sql = "SELECT cod_produto, nome, valor_unitario FROM produto ";
+ 			String sql = "SELECT COD_PRODUTO , NOME, VALOR_UNITARIO FROM produto";
  			
  			try {
  				model = TableModel.getModel(bd, sql);
@@ -231,7 +237,7 @@ public class FazerPedido extends JFrame {
          
          JLabel lblValorTotal = new JLabel("0.00");
          lblValorTotal.setFont(new Font("Tahoma", Font.PLAIN, 26));
-         lblValorTotal.setBounds(333, 467, 75, 33);
+         lblValorTotal.setBounds(292, 467, 116, 33);
          contentPane.add(lblValorTotal);
          
          DefaultTableModel modelProdFinal = new DefaultTableModel(); 
@@ -266,10 +272,12 @@ public class FazerPedido extends JFrame {
           		
           		try {
           			for(int i = 0; i < rowCount  ;i++) {
-              			soma += Double.parseDouble(tableProdutoFinal.getValueAt(i, 2).toString());
+              			soma += Double.parseDouble(tableProdutoFinal.getModel().getValueAt(i, 2).toString());
               		}
+          			
+          			SOMA_FINAL = soma;
               		
-              		lblValorTotal.setText(Double.toString(soma));
+              		lblValorTotal.setText(String.format("%.2f", SOMA_FINAL));
 
           		}catch(NullPointerException e) {
           			JOptionPane.showMessageDialog(null, e.toString());
@@ -296,16 +304,20 @@ public class FazerPedido extends JFrame {
              		
              		if(modelProdFinal.getRowCount() != -1) {
              			String codigo = modelProdFinal.getValueAt(tableProdutoFinal.getSelectedRow(), 2).toString();
-                  		double valorAnterior = Double.parseDouble(lblValorTotal.getText());
+                  		double valorAnterior = SOMA_FINAL;
                   		
                   		double novoValor = valorAnterior - Double.parseDouble(codigo);
                   		modelProdFinal.removeRow(tableProdutoFinal.getSelectedRow());
+                  		
+                  		SOMA_FINAL = novoValor;
+                  		
+                  		System.out.println(novoValor);
                   		
                   		if(novoValor <= 0) {
                   			lblValorTotal.setText("0");
                   		}
                   		
-                  		lblValorTotal.setText(Double.toString(novoValor));
+                  		lblValorTotal.setText(String.format("%.2f", novoValor));
              		}
          		}catch(ArrayIndexOutOfBoundsException arr) {
          			JOptionPane.showMessageDialog(null, arr.toString());
@@ -345,11 +357,12 @@ public class FazerPedido extends JFrame {
  					
  					for(int i = 0; i < tableProdutoFinal.getRowCount();i++) {
  						
- 						boolean salvar = ped.salvarPedido( Double.parseDouble(lblValorTotal.getText()), fieldData.getText(), Integer.parseInt(textCliente.getText()),Integer.parseInt(modelProdFinal.getValueAt(i, 0).toString()));
+ 						boolean salvar = ped.salvarPedido( SOMA_FINAL, fieldData.getText(), Integer.parseInt(textCliente.getText()),Integer.parseInt(modelProdFinal.getValueAt(i, 0).toString()));
  						
  	          			if(salvar) {
  	          				mensagemProduto = true; 	          				
  	          				System.out.println("done");
+ 	          				lblValorTotal.setText("0.00");
  	          				
  	          			}else {
  	          				mensagemProduto = false;

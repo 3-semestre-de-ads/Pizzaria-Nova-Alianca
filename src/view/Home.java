@@ -43,6 +43,7 @@ public class Home extends JFrame {
 					frame.setLocationRelativeTo(null);
 					frame.setResizable(false);
 					frame.setVisible(true);
+					frame.setTitle("Login");
 				} catch (Exception e) {
 					e.printStackTrace();
 				}

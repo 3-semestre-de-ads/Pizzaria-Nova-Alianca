@@ -42,6 +42,7 @@ import java.awt.Color;
 import javax.swing.JSeparator;
 import javax.swing.JCheckBox;
 import javax.swing.SwingConstants;
+import java.text.NumberFormat;
 
 public class FinalizarCompra extends JFrame {
 
@@ -52,6 +53,8 @@ public class FinalizarCompra extends JFrame {
 	private JLabel lblModoDePagamento;
 	private DefaultTableModel model;
 	private JTextField textComValorPago;
+	private double VALOR_FINAL = 0;
+	private double VALOR_COMPRA = 0;
 
 	/**
 	 * Launch the application.
@@ -185,17 +188,17 @@ public class FinalizarCompra extends JFrame {
 		lblValor.setForeground(Color.WHITE);
 		lblValor.setFont(new Font("Dialog", Font.BOLD, 27));
 		
-		JLabel lblR = new JLabel("R$");
-		lblR.setBounds(237, 12, 59, 22);
-		panel_1.add(lblR);
-		lblR.setForeground(Color.WHITE);
-		lblR.setFont(new Font("Dialog", Font.BOLD, 27));
-		
 		JLabel labelValorFinal = new JLabel("0.00");
-		labelValorFinal.setBounds(306, 12, 79, 22);
+		labelValorFinal.setBounds(269, 12, 106, 22);
 		panel_1.add(labelValorFinal);
 		labelValorFinal.setForeground(Color.WHITE);
 		labelValorFinal.setFont(new Font("Dialog", Font.BOLD, 27));
+		
+		JLabel lblR = new JLabel("R$");
+		lblR.setForeground(Color.WHITE);
+		lblR.setFont(new Font("Dialog", Font.BOLD, 27));
+		lblR.setBounds(205, 0, 54, 46);
+		panel_1.add(lblR);
 		
 		JPanel panelTemDesconto = new JPanel();
 		panelTemDesconto.setBounds(87, 327, 295, 45);
@@ -232,7 +235,8 @@ public class FinalizarCompra extends JFrame {
 		DB bd = new DB();
 		PedidoProduto ped = new PedidoProduto();
 		Pedido prod = new Pedido();
-		DecimalFormat format = new DecimalFormat("##.00");
+		DecimalFormat format = new DecimalFormat("#,###.00");
+		
 		
 		if(bd.getConnection()) {
 			String sql = "SELECT COD_PEDIDO, COD_CLIENTE, VALOR_PEDIDO, COD_PRODUTO FROM PEDIDO WHERE statusPedido = 0";
@@ -253,7 +257,7 @@ public class FinalizarCompra extends JFrame {
 			public void mouseClicked(MouseEvent arg0) {
 				labelCodCliente.setText(codigoClienteFinalizar.getText());
 				((DefaultTableModel) tableConfirmaProduto.getModel()).setNumRows(0);
-				
+
 				if(bd.getConnection()) {
 					
 
@@ -269,7 +273,7 @@ public class FinalizarCompra extends JFrame {
 					
 					
 					DefaultTableModel modelFinal = (DefaultTableModel) tableConfirmaProduto.getModel();
-					String sqlMostrarPedido = "SELECT PED.COD_PEDIDO, P.NOME,P.VALOR_UNITARIO FROM CLIENTE C ,PEDIDO PED, PRODUTO P WHERE PED.COD_CLIENTE='" +  Integer.parseInt(labelCodCliente.getText()) +"' AND C.COD_CLIENTE=PED.COD_CLIENTE AND P.COD_PRODUTO=PED.COD_PRODUTO AND PED.statusPedido = 0";
+					String sqlMostrarPedido = "SELECT PED.COD_PEDIDO, P.NOME, P.VALOR_UNITARIO  FROM CLIENTE C ,PEDIDO PED, PRODUTO P WHERE PED.COD_CLIENTE='" +  Integer.parseInt(labelCodCliente.getText()) +"' AND C.COD_CLIENTE=PED.COD_CLIENTE AND P.COD_PRODUTO=PED.COD_PRODUTO AND PED.statusPedido = 0";
 					
 					try {
 						
@@ -292,10 +296,12 @@ public class FinalizarCompra extends JFrame {
 	 				
 	 				if(count > 0) {
 	 					for(int i = 0;i < count;i++) {
-	 						valorFinal += Double.parseDouble(tableConfirmaProduto.getModel().getValueAt(i, 2).toString());
-	 						labelValorFinal.setText(Double.toString(valorFinal));
+	 						VALOR_COMPRA += Double.parseDouble(tableConfirmaProduto.getModel().getValueAt(i, 2).toString());
+	 						
 	 						ids[i] = Integer.parseInt(tableConfirmaProduto.getModel().getValueAt(i, 0).toString());
 	 					}
+	 					
+	 					labelValorFinal.setText(String.format("%.2f", VALOR_COMPRA)); 
 	 					
 	 					//Troco trocoCod = new Troco(ids);
 	 					
@@ -313,8 +319,10 @@ public class FinalizarCompra extends JFrame {
 								double desconto = (valorParaDesconto * Double.parseDouble(labelValorFinal.getText())) / 100;
 								
 								double valorFinalComDesconto = Double.parseDouble(labelValorFinal.getText()) - desconto;
+								labelValorFinal.setText(String.format("%.2f", valorFinalComDesconto));
 								
-								labelValorFinal.setText(Double.toString(valorFinalComDesconto));
+								VALOR_FINAL = valorFinalComDesconto;
+								
 							}else if(Double.parseDouble(labelValorFinal.getText()) > 50 && Double.parseDouble(labelValorFinal.getText()) < 200) {
 								valorParaDesconto = 20;
 								lblMostrarMsg.setText("Desconto de " + valorParaDesconto + "% aplicado");
@@ -323,7 +331,15 @@ public class FinalizarCompra extends JFrame {
 								
 								double valorFinalComDesconto = Double.parseDouble(labelValorFinal.getText()) - desconto;
 								
-								labelValorFinal.setText(format.format(valorFinalComDesconto));
+								labelValorFinal.setText(String.format("%.2f", valorFinalComDesconto));
+								
+								VALOR_FINAL = valorFinalComDesconto;
+								
+								//System.out.println(NumberFormat.getInstance().format(valorFinalComDesconto));
+								
+								//format.format(valorFinalComDesconto)
+								
+								System.out.println(NumberFormat.getInstance().format(valorFinalComDesconto));
 								
 							}else if(Double.parseDouble(labelValorFinal.getText()) > 300 && Double.parseDouble(labelValorFinal.getText()) < 1000) {
 								valorParaDesconto = 30;
@@ -333,13 +349,18 @@ public class FinalizarCompra extends JFrame {
 								
 								double valorFinalComDesconto = Double.parseDouble(labelValorFinal.getText()) - desconto;
 								
-								labelValorFinal.setText(format.format(valorFinalComDesconto));
+								labelValorFinal.setText(String.format("%.2f", valorFinalComDesconto));
+								
+								VALOR_FINAL = valorFinalComDesconto;
 							}
+						}else {
+							VALOR_FINAL = VALOR_COMPRA;
 						}
 	 					
-	 					System.out.println(Arrays.toString(troco.returnCodigos(ids)));
+	 					//System.out.println(Arrays.toString(troco.returnCodigos(ids)));
 	 				}
 		 		}
+				
 			}
 		});
 		
@@ -357,15 +378,22 @@ public class FinalizarCompra extends JFrame {
 						JOptionPane.showMessageDialog(null, "Insira o valor pago");
 					}else {
 						if(tableConfirmaProduto.getRowCount() > 0) {
-							double valorTotalCompra = Double.parseDouble(labelValorFinal.getText());
+							System.out.println(VALOR_FINAL);
+							String valorTotalCompra = labelValorFinal.getText();
 							
-							if(Double.parseDouble(textComValorPago.getText()) < valorTotalCompra) {
+							//Double.parseDouble(labelValorFinal.getText().replaceAll("\\.", "").replace(",", "."))
+							
+							//double valorFinalText = Double.parseDouble(labelValorFinal.getText());
+							
+							//System.out.println(valorFinalText);
+							
+							if(Double.parseDouble(textComValorPago.getText()) < VALOR_FINAL) {
 								JOptionPane.showMessageDialog(null, "Ops..O valor pago é menor que o de compra");
-							}else if(Double.parseDouble(textComValorPago.getText()) == valorTotalCompra) {
+							}else if(Double.parseDouble(textComValorPago.getText()) ==  VALOR_FINAL) {
 								JOptionPane.showMessageDialog(null, "Tudo certo com a compra");
 							}else {
 								
-								int input = JOptionPane.showOptionDialog(null, "Troco no valor de " + (Double.parseDouble(textComValorPago.getText()) - valorTotalCompra) + " reais", "Troco", JOptionPane.OK_CANCEL_OPTION, JOptionPane.INFORMATION_MESSAGE, null, null, null);
+								int input = JOptionPane.showOptionDialog(null, "Troco no valor de " + String.format("%.2f", (Double.parseDouble(textComValorPago.getText()) -  VALOR_FINAL)) + " reais", "Troco", JOptionPane.OK_CANCEL_OPTION, JOptionPane.INFORMATION_MESSAGE, null, null, null);
 
 								if(input == JOptionPane.OK_OPTION)
 								{
@@ -376,48 +404,40 @@ public class FinalizarCompra extends JFrame {
 									
 									if(panelTemDesconto.isVisible()) {
 										
-										if(Double.parseDouble(labelValorFinal.getText()) > 30 && Double.parseDouble(labelValorFinal.getText()) < 50) {
+										if(VALOR_FINAL > 30 && VALOR_FINAL < 50) {
 											valorParaDesconto = 10;
-											lblMostrarMsg.setText("Desconto de " + valorParaDesconto + "% aplicado");
-											
-											double desconto = (valorParaDesconto * Double.parseDouble(labelValorFinal.getText())) / 100;
-											
-											double valorFinalComDesconto = Double.parseDouble(labelValorFinal.getText()) - desconto;
-											
-											labelValorFinal.setText(Double.toString(valorFinalComDesconto));
-										}else if(Double.parseDouble(labelValorFinal.getText()) > 50 && Double.parseDouble(labelValorFinal.getText()) < 100) {
+										}else if(VALOR_FINAL > 50 && VALOR_FINAL < 100) {
 											valorParaDesconto = 20;
-											lblMostrarMsg.setText("Desconto de " + valorParaDesconto + "% aplicado");
-											
-											double desconto = (valorParaDesconto * Double.parseDouble(labelValorFinal.getText())) / 100;
-											
-											double valorFinalComDesconto = Double.parseDouble(labelValorFinal.getText()) - desconto;
-											
-											labelValorFinal.setText(format.format(valorFinalComDesconto));
-											
-										}else if(Double.parseDouble(labelValorFinal.getText()) > 100 && Double.parseDouble(labelValorFinal.getText()) < 300) {
+										}else if(VALOR_FINAL > 100 && VALOR_FINAL < 300) {
 											valorParaDesconto = 30;
-											lblMostrarMsg.setText("Desconto de " + valorParaDesconto + "% aplicado");
-											
-											double desconto = (valorParaDesconto * Double.parseDouble(labelValorFinal.getText())) / 100;
-											
-											double valorFinalComDesconto = Double.parseDouble(labelValorFinal.getText()) - desconto;									
-											
-											labelValorFinal.setText(format.format(Double.toString(valorFinalComDesconto)));
 										}
-									}
-
-
-									for(int i = 0; i < tableConfirmaProduto.getRowCount() ; i++) {
 										
-										prod.atualizarPedidoStatus(Integer.parseInt(tableConfirmaProduto.getModel().getValueAt(i, 0).toString()));
-										
-										ped.salvarDesconto(Integer.parseInt(tableConfirmaProduto.getModel().getValueAt(i, 0).toString()), Double.parseDouble(labelValorFinal.getText()) +(Double.parseDouble(labelValorFinal.getText()) * valorParaDesconto / 100 ));
-										
-										if(troco.salvarTroco((Double.parseDouble(textComValorPago.getText()) - valorTotalCompra), Integer.parseInt(tableConfirmaProduto.getModel().getValueAt(i, 0).toString()))) {
-											menConclude = "Obrigado pela compra";
-										}else {
-											menConclude = "Erro durante salvamento da compra";
+										for(int i = 0; i < tableConfirmaProduto.getRowCount() ; i++) {
+											
+											prod.atualizarPedidoStatus(Integer.parseInt(tableConfirmaProduto.getModel().getValueAt(i, 0).toString()));
+											
+											ped.salvarDesconto(Integer.parseInt(tableConfirmaProduto.getModel().getValueAt(i, 0).toString()), VALOR_FINAL + (VALOR_FINAL * valorParaDesconto / 100 ));
+											
+											if(troco.salvarTroco((Double.parseDouble(textComValorPago.getText()) -  VALOR_FINAL) , Integer.parseInt(tableConfirmaProduto.getModel().getValueAt(i, 0).toString()))) {
+												menConclude = "Obrigado pela compra";
+												VALOR_FINAL = 0;
+											}else {
+												menConclude = "Erro durante salvamento da compra";
+											}
+										}
+									}else {
+										for(int i = 0; i < tableConfirmaProduto.getRowCount() ; i++) {
+											
+											prod.atualizarPedidoStatus(Integer.parseInt(tableConfirmaProduto.getModel().getValueAt(i, 0).toString()));
+											
+											if(troco.salvarTroco((Double.parseDouble(textComValorPago.getText()) -  VALOR_FINAL), Integer.parseInt(tableConfirmaProduto.getModel().getValueAt(i, 0).toString()))) {
+												menConclude = "Obrigado pela compra";
+												VALOR_FINAL = 0;
+												labelValorFinal.setText("");
+												panelTemDesconto.setVisible(false);;
+											}else {
+												menConclude = "Erro durante salvamento da compra";
+											}
 										}
 									}
 									
